@@ -83,19 +83,12 @@ preIdempotence (G : Graph) (x : Carrier G) : Path (Carrier G) (addG G (addG G x 
   let timesEps : A -> A = \(x : A) -> mult x eps in
   let x1 : A = add (add x x) eps in
   let x2 : A = add (add (mult x eps) (mult x eps)) (mult eps eps) in
-  let
-    p : Path A x1 x2 =
-      <i> add (add (rightIdentity G x @ -i) (rightIdentity G x @ -i)) (rightIdentity G eps @ -i)
+  let x3 : A = mult (mult x eps) eps in
+  let p : Path A x1 x2 =
+       <i> add (add (rightIdentity G x @ -i) (rightIdentity G x @ -i)) (rightIdentity G eps @ -i)
   in
-  let
-    q2 : Path A x2 x =
-      <i> comp (<j> A) (decomposition G x eps eps @ -i)
-      [ (i=0) -> <j> x2
-      , (i=1) ->
-        <j> (rightIdentity G (rightIdentity G x @ j) @ j)
-      ]
-  in
-  <i> comp (<j> A) x2
+  let q : Path A x3 x = <j> (rightIdentity G (rightIdentity G x @ j) @ j) in
+  <i> comp (<j> A) (decomposition G x eps eps @ -i)
    [ (i=0) -> <j> p @ -j
-   , (i=1) -> <j> q2 @ j
+   , (i=1) -> q
    ]
