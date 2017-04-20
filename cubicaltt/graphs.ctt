@@ -80,7 +80,6 @@ preIdempotence (G : Graph) (x : Carrier G) : Path (Carrier G) (addG G (addG G x 
   let add : A -> A -> A = addG G in
   let mult : A -> A -> A = multG G in
   let eps : Carrier G = epsG G in
-  let timesEps : A -> A = \(x : A) -> mult x eps in
   let x1 : A = add (add x x) eps in
   let x2 : A = add (add (mult x eps) (mult x eps)) (mult eps eps) in
   let x3 : A = mult (mult x eps) eps in
