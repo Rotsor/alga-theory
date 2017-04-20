@@ -1,0 +1,101 @@
+module graphs where
+
+data Unit = tt
+
+Path (A : U) (a0 a1 : A) : U = PathP (<i> A) a0 a1
+
+Assoc (A : U) (op : A -> A -> A) : U =
+  (a b c : A) -> Path A (op (op a b) c) (op a (op b c))
+
+Comm (A : U) (op : A -> A -> A) : U =
+  (a b : A) -> Path A (op a b) (op b a)
+
+AddProps (A : U) (add : A -> A -> A) : U =
+  (assoc : Assoc A add)
+  * (comm : Comm A add)
+  * Unit
+
+Identity (A : U) (multiply : A -> A -> A) (eps : A) : U =
+  (left : (a : A) -> Path A (multiply eps a) a)
+  * (right : (a : A) -> Path A (multiply a eps) a)
+  * Unit
+
+Distributes (A : U) (add : A -> A -> A) (multiply : A -> A -> A) : U =
+  (distrib1 : (a b c : A) -> Path A (multiply a (add b c)) (add (multiply a b) (multiply a c)))
+  * (distrib2 : (a b c : A) -> Path A (multiply (add b c) a) (add (multiply b a) (multiply c a)))
+  * Unit
+
+MultProps (A : U) (multiply : A -> A -> A) (eps : A) : U =
+  (assoc : Assoc A multiply) * Identity A multiply eps
+
+Decomposition (A : U) (add : A -> A -> A) (multiply : A -> A -> A) : U =
+  (p q r : A) ->
+  Path A
+    (multiply (multiply p q) r)
+    (add (add (multiply p q) (multiply p r)) (multiply q r))
+
+GraphOps (A : U) : U =
+  (eps : A)
+  * (add : A -> A -> A)
+  * (multiply : A -> A -> A)
+  * Unit
+
+epsGO (A : U) (Ops : GraphOps A) : A = Ops.1
+addGO (A : U) (Ops : GraphOps A) : A -> A -> A = Ops.2.1
+multGO (A : U) (Ops : GraphOps A) : A -> A -> A = Ops.2.2.1
+
+GraphProps (A : U) (Ops : GraphOps A) : U =
+  let eps : A = epsGO A Ops in
+  let add : A -> A -> A = addGO A Ops in
+  let multiply : A -> A -> A = multGO A Ops in
+  (addProps : AddProps A add)
+  * (multProps : MultProps A multiply eps)
+  * (distributes : Distributes A add multiply)
+  * (decomposition : Decomposition A add multiply)
+  * Unit
+
+isGraph (A : U) : U =
+  (ops : GraphOps A)
+  * GraphProps A ops
+
+Graph : U = (A : U) * isGraph A
+
+Carrier (G : Graph) : U = G.1
+
+opsG (G : Graph) : GraphOps (Carrier G) = G.2.1
+epsG (G : Graph) : Carrier G = (opsG G).1
+addG (G : Graph) : Carrier G -> Carrier G -> Carrier G = (opsG G).2.1
+multG (G : Graph) : Carrier G -> Carrier G -> Carrier G = (opsG G).2.2.1
+
+propsG (G : Graph) : GraphProps (Carrier G) (opsG G) = G.2.2
+
+rightIdentity (G : Graph) : (x : Carrier G) -> Path (Carrier G) (multG G x (epsG G)) x
+  = (propsG G).2.1.2.2.1
+
+decomposition (G : Graph) : Decomposition (Carrier G) (addG G) (multG G)
+  = (propsG G).2.2.2.1
+
+preIdempotence (G : Graph) (x : Carrier G) : Path (Carrier G) (addG G (addG G x x) (epsG G)) x =
+  let A : U = Carrier G in
+  let add : A -> A -> A = addG G in
+  let mult : A -> A -> A = multG G in
+  let eps : Carrier G = epsG G in
+  let timesEps : A -> A = \(x : A) -> mult x eps in
+  let x1 : A = add (add x x) eps in
+  let x2 : A = add (add (mult x eps) (mult x eps)) (mult eps eps) in
+  let
+    p : Path A x1 x2 =
+      <i> add (add (rightIdentity G x @ -i) (rightIdentity G x @ -i)) (rightIdentity G eps @ -i)
+  in
+  let
+    q2 : Path A x2 x =
+      <i> comp (<j> A) (decomposition G x eps eps @ -i)
+      [ (i=0) -> <j> x2
+      , (i=1) ->
+        <j> (rightIdentity G (rightIdentity G x @ j) @ j)
+      ]
+  in
+  <i> comp (<j> A) x2
+   [ (i=0) -> <j> p @ -j
+   , (i=1) -> <j> q2 @ j
+   ]
